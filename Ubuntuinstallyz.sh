@@ -1,9 +1,8 @@
 #! /bin/bash
 
 #本脚本用于部署Yunzai-Bot v3
-#于2022.10.14
+#于2022.11.20
 
-set -e
 
 if [ $EUID -ne 0 ]; then
     echo "请先输入sudo su root 切换成root权限"
@@ -75,8 +74,12 @@ fi
 cd Yunzai-Bot/
 echo "开始安装模块"
 if [ ! -d "node-mudules/" ]; then
-    npm install pnpm -g
-    npm install cnpm -g --registry=https://registry.npmmirror.com
+    if ! type pnpm >/dev/null; then
+        npm install pnpm -g
+    fi;
+    if ! type cnpm >/dev/null; then
+        npm install cnpm -g --registry=https://registry.npmmirror.com
+    fi;
     pnpm install -P
     echo "安装模块完成"
 else
@@ -90,19 +93,78 @@ echo "云崽本体安装完成"
 
 #安装其他主要插件包
 
-echo "开始安装py-plugin"
-if [ ! -d plugins/py-plugin/ ]; then
-    echo "安装py依赖中"
-    pnpm install @grpc/grpc-js @grpc/proto-loader -w
-    echo "克隆py项目中"
-    git clone -b main https://github.com/realhuhu/py-plugin.git ./plugins/py-plugin
+echo -n "你想装哪个版本的py-plugin(新版v3请输入v3，旧版py请输入main，不想请crtl + c退出):"
+
+read ans
+if [ ${ans} == v3 ]; then
+    echo "开始安装v3分支py-plugin";
+    echo "安装v3云崽依赖"
+    pnpm install iconv-lite @grpc/grpc-js @grpc/proto-loader -w
+    if ! type python >/dev/null 2>&1; then
+        echo "正在为您安装python3.10"
+        curl -sL https://gitee.com/piedianz/testshell/raw/dev/ubuntu_install_python3.10_apt.sh | sudo -E bash -
+    fi;
+    PY_VERSION=`python -V 2>&1|awk '{print $2}'|awk -F '.' '{print $2}'`  #第一个用空格分割，取第二部分版本号3.10.8，第二个以'.'分割，取第二个数字10
+    if [[ ${PY_VERSION} -lt 10 ]]; then
+        echo -n "检测到您的py版本小于3.10，是否安装python3.10(yes/no):"
+        read ans1
+        if [ ${ans1} == yes ]; then
+            echo "正在为您安装python3.10"
+            curl -sL https://gitee.com/piedianz/testshell/raw/dev/ubuntu_install_python3.10_apt.sh | sudo -E bash -
+        else
+            echo "请保证你的python版本大于等于3.9"
+        fi;
+    fi;
     if [ ! -d plugins/py-plugin/ ]; then
-        echo "py安装失败"
-        exit
-    fi
-    echo "py安装成功,因部署本地py问题较多,此处建议使用远程使用py的功能"
-    echo "有关远程可去https://gitee.com/realhuhu/py-plugin查看"
-fi
+        echo "克隆项目中"
+        git clone https://github.com/realhuhu/py-plugin.git ./plugins/py-plugin
+    fi;
+    cd plugins/py-plugin
+    if ! type poetry >/dev/null 2>&1; then
+        echo "开始安装poetry"
+        #python install
+        pip install poetry
+        if [ $? == 0 ]; then
+            echo "poetry安装完成"
+        else
+            echo "poetry安装失败，请自行百度安装方法"
+            exit 1;
+        fi;
+    fi;
+    echo "开始安装相关依赖"
+    poetry install;
+    if [ $? == 0 ]; then
+        echo "依赖安装成功";
+    else
+        echo "依赖安装失败，更换方法2"
+        poetry run pip install -r requirements.txt --trusted-host mirrors.aliyun.com
+        if [ $? == 0 ]; then
+            echo "依赖安装成功";
+        else
+            echo "依赖安装失败"
+            exit 1;
+        fi;
+    fi;
+    echo "v3分支py-plugin安装完成，有关插件安装请查看https://gitee.com/realhuhu/py-plugin/tree/v3/"
+    cd ../../
+elif [ ${ans} == main ]; then
+    echo "开始安装main分支py-plugin";
+    if [ ! -d plugins/py-plugin/ ]; then
+        echo "安装py依赖中"
+        pnpm install @grpc/grpc-js @grpc/proto-loader -w
+        echo "克隆py项目中"
+        git clone -b main https://github.com/realhuhu/py-plugin.git ./plugins/py-plugin
+        if [ ! -d plugins/py-plugin/ ]; then
+            echo "py安装失败"
+            exit
+        fi
+        echo "py安装成功,因部署本地py问题较多,此处建议使用远程使用py的功能"
+        echo "有关远程可去https://gitee.com/realhuhu/py-plugin的main分支查看"
+    fi;
+else
+    echo "未恰当选择，继续安装其他插件";
+fi;
+
 
 echo "开始安装Guoba-Plugin"
 if [ ! -d plugins/Guoba-Plugin/ ]; then
