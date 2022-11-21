@@ -95,7 +95,7 @@ if [ ! -d plugins/py-plugin/ ]; then
     echo "安装py依赖中"
     pnpm install @grpc/grpc-js @grpc/proto-loader -w
     echo "克隆py项目中"
-    git clone https://github.com/realhuhu/py-plugin.git ./plugins/py-plugin
+    git clone -b main https://github.com/realhuhu/py-plugin.git ./plugins/py-plugin
     if [ ! -d plugins/py-plugin/ ]; then
         echo "py安装失败"
         exit
