@@ -19,7 +19,7 @@ echo "开始安装nodejs"
 #/dev/null相当于一个黑洞，任何输出信息都会直接丢失，此处表示将标准输出(1) 以及标准错误输出(2)都重定向到null中去，即不输出
 #若type有输出，则exit code 为0
 if ! type node >/dev/null 2>&1; then
-    curl -sL https://deb.nodesource.com/setup_16.x | sudo -E bash - #curl的-s表示不输出错误和进度信息，-L表示让http请求跟随服务器的重定向
+    curl -sL https://deb.nodesource.com/setup_18.x | sudo -E bash - #curl的-s表示不输出错误和进度信息，-L表示让http请求跟随服务器的重定向
     sudo apt-get install -y nodejs
 else
     echo "nodejs已安装"
