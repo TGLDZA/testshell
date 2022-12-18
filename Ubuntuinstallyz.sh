@@ -1,17 +1,18 @@
 #! /bin/bash
 
 #本脚本用于部署Yunzai-Bot v3
-#于2022.11.20
+#于2022.12.18
 
 
 if [ $EUID -ne 0 ]; then
-    echo "请先输入sudo su root 切换成root权限"
+    echo "请先输入su root 切换成root权限"
     exit
 fi
-
 echo "开始安装和更新相关环境依赖"
-apt update              #列出可更新的软件清单
-apt-get install -y sudo #安装sudo权限  -y表示执行过程中全部是yes
+apt update    #更新软件清单
+if ! type sudo >/dev/null 2>&1; then
+    apt-get install -y sudo #安装sudo权限  -y表示执行过程中全部是yes
+fi;
 apt-get install -y curl #安装curl,curl是用于请求web服务器的工具
 
 #安装nodejs
@@ -19,8 +20,12 @@ echo "开始安装nodejs"
 #/dev/null相当于一个黑洞，任何输出信息都会直接丢失，此处表示将标准输出(1) 以及标准错误输出(2)都重定向到null中去，即不输出
 #若type有输出，则exit code 为0
 if ! type node >/dev/null 2>&1; then
-    curl -sL https://deb.nodesource.com/setup_18.x | sudo -E bash - #curl的-s表示不输出错误和进度信息，-L表示让http请求跟随服务器的重定向
+    curl -sL https://deb.nodesource.com/setup_16.x | sudo -E bash - #curl的-s表示不输出错误和进度信息，-L表示让http请求跟随服务器的重定向
     sudo apt-get install -y nodejs
+    if ! type node >/dev/null 2>&1; then
+        echo "nodejs安装失败"
+        exit 1;
+    fi;
 else
     echo "nodejs已安装"
 fi
@@ -30,6 +35,9 @@ echo "安装nodejs完成"
 if ! type npm >/dev/null 2>&1; then
     apt install npm -y
     echo 'npm安装成功'
+    if ! type npm >/dev/null 2>&1; then
+        echo 'npm安装失败';
+        exit 1;
 else
     echo 'npm已安装'
 fi
@@ -37,13 +45,28 @@ fi
 #安装并运行redis
 echo "开始安装redis"
 apt-get install redis -y
+if [ $? == 0 ]; then
+    echo 'redis安装完成'
+else
+    echo 'redis安装失败'
+    exit 1;
+fi;
 #启动redis服务,save中的默认参数配置
 redis-server --save 900 1 --save 300 10 --daemonize yes
+if [ $? == 0 ]; then
+    echo 'redis启动完成'
+else
+    echo 'redis启动失败'
+    exit 1;
+fi;
 echo "redis安装完成"
 
 #安装chromium浏览器
 echo "开始安装chromium浏览器"
 apt install chromium-browser -y
+if [ $? != 0 ]; then
+    echo "安装chromium失败，自行百度安装方法";
+    exit 1;
 echo "安装chromium完成"
 
 #安装中文字体
@@ -52,10 +75,14 @@ apt install -y --force-yes --no-install-recommends fonts-wqy-microhei
 echo "安装中文字体完成"
 
 #安装git
-echo "开始安装git"
-apt install git -y
+if ! type git >/dev/null 2>&1; then
+    echo "开始安装git"
+    apt install git -y
+    echo "安装git完成"
+else
+    echo "git已安装"
+fi;
 git config --global http.sslVerify false #去除https的ssl验证，方便拉取项目
-echo "安装git完成"
 
 #克隆云崽本体
 echo "开始克隆Yunzai-Bot"
@@ -76,12 +103,43 @@ echo "开始安装模块"
 if [ ! -d "node-mudules/" ]; then
     if ! type pnpm >/dev/null; then
         npm install pnpm -g
+        if [ $? != 0 ]; then
+            echo 'pnpm安装失败，尝试换源安装';
+            npm config set registry https://registry.npm.taobao.org
+            npm install pnpm -g;
+            if ! type pnpm >/dev/null 2>&1; then
+                echo 'pnpm安装失败，自行百度方法'
+                exit 1;
+            else
+                echo 'pnpm安装成功';
+            fi;
+        else
+            echo 'pnpm安装成功'
+        fi;
     fi;
     if ! type cnpm >/dev/null; then
         npm install cnpm -g --registry=https://registry.npmmirror.com
+        if [ $? != 0 ]; then
+            echo 'cnpm安装失败，尝试换源安装';
+            npm config set registry https://registry.npm.taobao.org
+            npm install cnpm -g;
+            if ! type cnpm >/dev/null 2>&1; then
+                echo 'cnpm安装失败，自行百度方法'
+                exit 1;
+            else
+                echo 'cnpm安装成功';
+            fi;
+        else
+            echo 'cnpm安装成功'
+        fi;
     fi;
     pnpm install -P
-    echo "安装模块完成"
+    if [ $? == 0 ]; then
+        echo "安装模块完成"
+    else
+        echo "模块安装失败，请查看报错信息，确保pnpm已正常安装";
+        exit 1;
+    fi;    
 else
     echo "模块已安装"
 fi
@@ -97,56 +155,96 @@ echo -n "你想装哪个版本的py-plugin(新版v3请输入v3，旧版py请输�
 
 read ans
 if [ ${ans} == v3 ]; then
-    echo "开始安装v3分支py-plugin";
-    echo "安装v3云崽依赖"
-    pnpm install iconv-lite @grpc/grpc-js @grpc/proto-loader -w
-    if ! type python >/dev/null 2>&1; then
-        echo "正在为您安装python3.10"
-        curl -sL https://gitee.com/piedianz/testshell/raw/dev/ubuntu_install_python3.10_apt.sh | sudo -E bash -
-    fi;
-    PY_VERSION=`python -V 2>&1|awk '{print $2}'|awk -F '.' '{print $2}'`  #第一个用空格分割，取第二部分版本号3.10.8，第二个以'.'分割，取第二个数字10
-    if [[ ${PY_VERSION} -lt 10 ]]; then
-        echo -n "检测到您的py版本小于3.10，是否安装python3.10(yes/no):"
-        read ans1
-        if [ ${ans1} == yes ]; then
+    echo "你想本地部署还是远程连接，远程连接插件无法自定义，本地部署有关python问题可能较多";
+    echo -n "本地部署请输入ben，远程连接请输入out，不想请ctrl + c退出:"
+    read ans2
+    if [ ${ans2} == ben ]; then
+        echo "开始安装v3分支py-plugin";
+        echo "安装v3云崽依赖"
+        pnpm install iconv-lite @grpc/grpc-js @grpc/proto-loader -w
+        if ! type python >/dev/null 2>&1; then
             echo "正在为您安装python3.10"
             curl -sL https://gitee.com/piedianz/testshell/raw/dev/ubuntu_install_python3.10_apt.sh | sudo -E bash -
-        else
-            echo "请保证你的python版本大于等于3.9"
         fi;
-    fi;
-    if [ ! -d plugins/py-plugin/ ]; then
-        echo "克隆项目中"
-        git clone https://github.com/realhuhu/py-plugin.git ./plugins/py-plugin
-    fi;
-    cd plugins/py-plugin
-    if ! type poetry >/dev/null 2>&1; then
-        echo "开始安装poetry"
-        #python install
-        pip install poetry
-        if [ $? == 0 ]; then
-            echo "poetry安装完成"
-        else
-            echo "poetry安装失败，请自行百度安装方法"
-            exit 1;
+        PY_VERSION=`python -V 2>&1|awk '{print $2}'|awk -F '.' '{print $2}'`  #第一个用空格分割，取第二部分版本号3.10.8，第二个以'.'分割，取第二个数字10
+        if [[ ${PY_VERSION} -lt 10 ]]; then
+            echo -n "检测到您的py版本小于3.10，是否安装python3.10(yes/no):"
+            read ans1
+            if [ ${ans1} == yes ]; then
+                echo "正在为您安装python3.10"
+                curl -sL https://gitee.com/piedianz/testshell/raw/dev/ubuntu_install_python3.10_apt.sh | sudo -E bash -
+            else
+                echo "请保证你的python版本大于等于3.9"
+            fi;
         fi;
-    fi;
-    echo "开始安装相关依赖"
-    poetry install;
-    if [ $? == 0 ]; then
-        echo "依赖安装成功";
-    else
-        echo "依赖安装失败，更换方法2"
-        poetry run pip install -r requirements.txt --trusted-host mirrors.aliyun.com
+        if ! type pip >/dev/null 2>&1; then
+            if ! type pip3 >/dev/null 2>&1; then
+                echo 'pip或者pip3未找到，请确保你已正确安装或指向';
+                exit 1;
+            fi;
+        fi;
+        if [ ! -d plugins/py-plugin/ ]; then
+            echo "克隆项目中"
+            git clone https://github.com/realhuhu/py-plugin.git ./plugins/py-plugin
+            echo '克隆结束'
+            if [ $? != 0 ]; then
+                git clone https://gitee.com/realhuhu/py-plugin.git ./plugins/py-plugin
+                echo '克隆结束';
+            fi;
+        fi;
+        cd plugins/py-plugin
+        if ! type poetry >/dev/null 2>&1; then
+            echo "开始安装poetry，方法1可能会由于网络问题比较慢"
+            curl -sSL https://install.python-poetry.org | python -        
+            if [ $? == 0 ]; then
+                echo "poetry安装完成"
+            else
+                echo "poetry安装失败，更换方法2 pip安装"
+                pip install poetry
+                if [ $? == 0 ]; then
+                    echo "poetry安装成功,可使用poetry -V查看"
+                else
+                    echo "poetry安装失败，请自行百度其他方法"
+                    exit 1;
+                fi;
+            fi;
+        fi;
+        echo "开始安装相关依赖"
+        poetry install;
         if [ $? == 0 ]; then
             echo "依赖安装成功";
         else
-            echo "依赖安装失败"
-            exit 1;
+            echo "依赖安装失败，更换方法2"
+            poetry run pip install -r requirements.txt --trusted-host mirrors.aliyun.com
+            if [ $? == 0 ]; then
+                echo "依赖安装成功";
+            else
+                echo "依赖安装失败"
+                exit 1;
+            fi;
         fi;
+        echo "v3分支py-plugin安装完成，有关插件安装请查看https://gitee.com/realhuhu/py-plugin/tree/v3/"
+        cd ../../
+    elif [ ${ans2} == out ]; then
+        echo "开始安装v3分支py-plugin";
+        if [ ! -d plugins/py-plugin/ ]; then
+            echo "克隆项目中"
+            git clone https://github.com/realhuhu/py-plugin.git ./plugins/py-plugin
+            echo '克隆结束'
+            if [ $? != 0 ]; then
+                git clone https://gitee.com/realhuhu/py-plugin.git ./plugins/py-plugin
+                echo '克隆结束';
+            fi;
+        fi;
+        echo "安装v3云崽依赖"
+        pnpm install iconv-lite @grpc/grpc-js @grpc/proto-loader -w;
+        if [ $? != 0 ]; then
+            echo 'py-plugin依赖安装失败，请待脚本结束后自行查看';
+        fi;
+        echo "v3分支py-plugin安装完成，有关远程配置请查看https://gitee.com/realhuhu/py-plugin/tree/v3/"
+    else
+        echo '未恰当输入，自动选择向下安装其他插件';
     fi;
-    echo "v3分支py-plugin安装完成，有关插件安装请查看https://gitee.com/realhuhu/py-plugin/tree/v3/"
-    cd ../../
 elif [ ${ans} == main ]; then
     echo "开始安装main分支py-plugin";
     if [ ! -d plugins/py-plugin/ ]; then

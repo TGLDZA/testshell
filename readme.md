@@ -11,7 +11,7 @@
 ```
 apt update
 apt install curl -y
-curl -sL https://gitee.com/piedianz/testshell/raw/dev/the vim and profile from acwing/install profile.sh | sudo -E bash -
+curl -sL https://gitee.com/piedianz/testshell/raw/dev/the_vim_and_profile_from_acwing/install_profile.sh | sudo -E bash -
 ```
 
 其他的没有测试过，有勇士的话可以尝试下
@@ -34,15 +34,15 @@ curl -sL https://gitee.com/piedianz/testshell/raw/dev/the vim and profile from a
 #### 服务器部署
 1. curl执行
 ```
+apt update && apt install sudo -y
 sudo su root
-apt update
 apt install curl -y
 curl -sL https://gitee.com/piedianz/testshell/raw/dev/Ubuntuinstallyz.sh | sudo -E bash -
 ```
 2. 直接执行文件(推荐)
 ```
+apt update && apt install sudo -y
 sudo su root
-apt update
 apt install -y git
 git clone https://gitee.com/piedianz/testshell
 cp testshell/Ubuntuinstallyz.sh test.sh
@@ -66,7 +66,9 @@ python termux-linux-install.py
 cd ~/Termux-Linux/Ubuntu
 ./start-ubuntu.sh
 ```
-执行脚本方式同服务器方式
+执行脚本方式同服务器方式，若是redis没有正常安装或者启动就用其他方法或百度，其余部分有效
+
+!!! 手机上本脚本安装的redis无法可能正常使用，手机端部署最好使用时雨佬的脚本[TRSS Yunzai: TRSS Yunzai 云崽机器人 (gitee.com)](https://gitee.com/TimeRainStarSky/TRSS_Yunzai)
 
 使用如下代码启动Yunzai
 ```
@@ -82,34 +84,52 @@ node app
 
 #### 问题描述
 1. 装pnpm或者是其他模块太久，可以尝试更换npm下载源
-```
+```bash
 npm config set registry https://registry.npm.taobao.org
 npm config get registry 
 ```
 
+2. node版本过低
+
+   ```bash
+   升级node
+   npm cache clean -f && npm install n -g
+   n stable 或者安装指定版本
+   node -v查看是否升级成功
+   若上述方法没升级成功则1.可能是n的安装路径未与node对应
+   2.在安装完node新版本会有提示原路径node和新路径node
+   比如我升级完在新版本在/usr/local/bin/node而旧版本在/usr/bin/node，此时只要建立一个软链接就行
+   mv /usr/bin/node /usr/bin/node.bak && ln -s /usr/local/bin/node /usr/bin/node
+   详细解决办法可参考https://www.jianshu.com/p/d934d3ba67ec
+   ```
+
+   
+
+   
 
 ### 小派蒙部署
+
 - 首先克隆本项目
 ```
 git clone https://gitee.com/piedianz/testshell.git
 ```
 - 毛坯服务器的配置文件（可选）
 ```
-cp 'testshell/the vim and tmux profile from acwing/install profile.sh' 'install profile.sh'
-bash install profile.sh
+cp 'testshell/the_vim_and_tmux_profile_from_acwing/install_profile.sh' 'install_profile.sh'
+bash install_profile.sh
 ```
 - python3.10及pip的安装（有python3.8以上可以不用安装）
 ```
-cp 'testshell/ubuntu install python3.10 (from apt).sh' PY.sh
+cp 'testshell/ubuntu_install_python3.10_apt.sh' PY.sh
 bash PY.sh
 ```
 - 小派蒙的安装（一定要有python环境）
 ```
-cp 'testshell/Ubuntu install LittlePaimon.sh' PM.sh
+cp 'testshell/Ubuntu_install_LittlePaimon.sh' PM.sh
 bash PM.sh
 ```
 - ffmpeg的手动编译安装（可选）
 ```
-cp 'testshell/ffmpeg by make.sh' FM.sh
+cp 'testshell/ffmpeg_by_make.sh' FM.sh
 bash FM.sh
 ```

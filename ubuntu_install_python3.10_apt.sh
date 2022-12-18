@@ -17,9 +17,18 @@ echo '优先采用apt方式安装pip'
 sudo apt install python3-pip
 #为原链接备份并将pip链接至pip3.10
 echo '为pip创建软链接'
-mv /usr/bin/pip /usr/bin/pip.bak
-ln -s /usr/local/bin/pip3.10 /usr/bin/pip
+if type pip3.10 >/dev/null 2>&1; then
+    mv /usr/bin/pip /usr/bin/pip.bak
+    ln -s /usr/bin/pip3.10 /usr/bin/pip
+    echo '建立软链接成功';
+fi;
 
+if ! type pip >/dev/null 2>&1; then
+    if type pip3 >/dev/null 2>&1; then
+        mv /usr/bin/pip /usr/bin/pip.bak
+        ln -s /usr/bin/pip3 /usr/bin/pip;
+    fi;
+fi;
 #若上述pip并未装到python3.10的包列表中，则选择以下方式重装pip
 if ! type pip >/dev/null 2>&1; then
     echo '更换方式安装pip，可能会出现网络问题导致超时'

@@ -1,13 +1,14 @@
 脚本为本人练手使用
 Ubuntuinstallyz为安装Yunzai-Bot的一键脚本
 安装nodejs等软件部分有参考
-已经过安卓的termux以及腾讯云的服务器测试过可运行
+已经过腾讯云的服务器测试过可运行
 直接bash运行本文件即可
 有问题请找qq：2012279569
 tips:
-若不希望出脚本问题就停止往下运行可以把Ubuntuinstallyz.sh第七行的set -e删除（由于连接github经常出网络问题）
+若希望脚本出问题就停止往下运行可以在Ubuntuinstallyz.sh第二行加上set -e（由于连接github经常出网络问题）
 如果启动后提示有某些依赖没装可对应其提示安装
-脚本安装了py-plugin但是并非本地，若想本地部署py请查看https://gitee.com/realhuhu/py-plugin
+脚本安装了main分支py-plugin但是并非本地，若想本地部署py请查看https://gitee.com/realhuhu/py-plugin的main分支（不过远程好像没法使用了，推荐直接用v3分支）
+脚本提供安装了v3分支py-plugin的远程还是本地，远程连接插件不能自定义，本地部署问题较多，有问题建议先查看https://gitee.com/realhuhu/py-plugin的v3分支
 安装时间可能比较长，服务器建议在tmux或者screen运行（防止连接中断脚本停止运行）
 由于apt安装的ffmpeg版本过低可能无法处理amr的转换，故使用手动编译的脚本，不过手动编译时间会比较长
 先进行过node app完成配置项再填ffmpeg的路径，在Yunzai-Bot同级目录，建议用锅巴登录填写防止格式错误
