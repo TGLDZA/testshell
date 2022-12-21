@@ -38,6 +38,7 @@ if ! type npm >/dev/null 2>&1; then
     if ! type npm >/dev/null 2>&1; then
         echo 'npm安装失败';
         exit 1;
+    fi;
 else
     echo 'npm已安装'
 fi
@@ -67,6 +68,7 @@ apt install chromium-browser -y
 if [ $? != 0 ]; then
     echo "安装chromium失败，自行百度安装方法";
     exit 1;
+fi;
 echo "安装chromium完成"
 
 #安装中文字体
