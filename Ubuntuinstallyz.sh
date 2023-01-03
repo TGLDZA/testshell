@@ -89,7 +89,7 @@ git config --global http.sslVerify false #去除https的ssl验证，方便拉取
 #克隆云崽本体
 echo "开始克隆Yunzai-Bot"
 if [ ! -d "Yunzai-Bot/" ]; then #如果不存在Yunzai-Bot文件夹,-d表示是否存在文件夹
-    git clone --depth=1 -b main https://github.com/Le-niao/Yunzai-Bot.git
+    git clone --depth=1 -b main https://gitee.com/Le-niao/Yunzai-Bot.git
     if [ ! -d "Yunzai-Bot/" ]; then
         echo "克隆失败"
         exit 0
@@ -199,6 +199,7 @@ if [ ${ans} == v3 ]; then
             echo "开始安装poetry，方法1可能会由于网络问题比较慢"
             curl -sSL https://install.python-poetry.org | python -        
             if [ $? == 0 ]; then
+                ln -s ~/.local/bin/poetry /usr/bin/poetry    #为poetry建立软链接
                 echo "poetry安装完成"
             else
                 echo "poetry安装失败，更换方法2 pip安装"
