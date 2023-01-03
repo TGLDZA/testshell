@@ -199,6 +199,9 @@ if [ ${ans} == v3 ]; then
             echo "开始安装poetry，方法1可能会由于网络问题比较慢"
             curl -sSL https://install.python-poetry.org | python -        
             if [ $? == 0 ]; then
+                if [ -f /usr/bin/poetry ]; then
+                    mv /usr/bin/poetry /usr/bin/poetry.bak   #备份原有的poetry链接
+                fi;
                 ln -s ~/.local/bin/poetry /usr/bin/poetry    #为poetry建立软链接
                 echo "poetry安装完成"
             else
